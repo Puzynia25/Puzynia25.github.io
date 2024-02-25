@@ -111,6 +111,9 @@ const hash = md5(authString);
 const itemsPerRange = 50;
 
 //функция по получению данных у API
+// const proxy = "https://test.cors.workers.dev/?";
+const API_URL = "https://api.valantis.store:41000/";
+
 const postData = async (url = "", data = {}) => {
     const response = await fetch(url, {
         method: "POST",
@@ -130,12 +133,15 @@ const isError = ref(false);
 //получение списка товаров
 function getItemsById(attempt = 1) {
     loading.value = true;
-    postData("http://api.valantis.store:40000/", {
+    postData(API_URL, {
         action: "get_ids",
         params: { limit: itemsPerRange },
     })
         .then((res) => {
             getItems(res);
+            if (res.result.length < 1) {
+                getItemsById(pageNum, attempt + 1);
+            }
         })
         .catch((err) => {
             isError.value = true;
@@ -152,7 +158,7 @@ onMounted(() => {
 
 //запрос для подсчета общего количества товаров
 function getTotalLength(attempt = 1) {
-    postData("http://api.valantis.store:40000/", {
+    postData(API_URL, {
         action: "get_ids",
         params: {},
     })
@@ -160,6 +166,9 @@ function getTotalLength(attempt = 1) {
             const uniqueIds = [...new Set(res.result)]; //удаление дубликатов id
             totalItems.value = uniqueIds.length;
             isError.value = false;
+            if (res.result.length < 1) {
+                getTotalLength(attempt + 1);
+            }
         })
         .catch((err) => {
             isError.value = true;
@@ -191,12 +200,15 @@ function getItemsPerPage(pageNum, attempt = 1) {
     itemsList.value = null;
     numOfPage = pageNum;
     offset = (offset + itemsPerRange) * pageNum;
-    postData("http://api.valantis.store:40000/", {
+    postData(API_URL, {
         action: "get_ids",
         params: { offset: offset, limit: itemsPerRange },
     })
         .then((res) => {
             getItems(res);
+            if (res.result.length < 1) {
+                getItemsPerPage(pageNum, attempt + 1);
+            }
         })
         .catch((err) => {
             isError.value = true;
@@ -219,7 +231,7 @@ function filterItems(name, attempt = 1) {
     }
 
     loading.value = true;
-    postData("http://api.valantis.store:40000/", {
+    postData(API_URL, {
         action: "filter",
         params: {
             [name]: filterValue.value,
@@ -227,6 +239,9 @@ function filterItems(name, attempt = 1) {
     })
         .then((res) => {
             getItems(res);
+            if (res.result.length < 1) {
+                filterItems(name, attempt + 1);
+            }
         })
         .catch((err) => {
             isError.value = true;
@@ -240,7 +255,7 @@ function filterItems(name, attempt = 1) {
 
 //получение списка товаров get_items
 function getItems(res) {
-    postData("http://api.valantis.store:40000/", {
+    postData(API_URL, {
         action: "get_items",
         params: { ids: res.result },
     }).then((data) => {
